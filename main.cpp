@@ -305,7 +305,7 @@ void EnviaEstadoOutputMQTT(void)
   presenceStatus = digitalRead(PINO_PRESENCA);
 
   //float U = 220;
-  double I = sensor.getCurrentAC(60) - 7.3;
+  float I = sensor.getCurrentAC(60);
 
   Serial.println(String("I = ") + I + " A");
 

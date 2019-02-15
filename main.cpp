@@ -13,9 +13,9 @@ PubSubClient MQTT(espClient);
 float temperatura, umidade;
 bool releStatus, presenceStatus, lightStatus;
 
-ACS712 sensor(ACS712_30A, A0);
+ACS712 sensor(ACS712_30A, SENSOR_CORRENTE);
 
-#define CHAR_BUFFER_SIZE  15
+#define CHAR_BUFFER_SIZE  18
 String sMAC;
 char charBufferMAC[CHAR_BUFFER_SIZE];
 
@@ -42,11 +42,13 @@ void setup() {
     digitalWrite(PINO_STATUS, LOW);
     configWifi();
     configMQTT();
+    sensor.calibrate();
     Arcondicionado_inicializar();
 
     sMAC = WiFi.macAddress();
     sMAC.toCharArray(charBufferMAC, CHAR_BUFFER_SIZE);
 
+    strcpy(ID_MQTT, charBufferMAC);
 
     strcpy(TOPICO_SUBSCRIBE_CONTROLE_LUZ, charBufferMAC);
     strcat(TOPICO_SUBSCRIBE_CONTROLE_LUZ, TOPICO_CONTROLE_LUZ);
@@ -69,6 +71,8 @@ void setup() {
     strcpy(TOPICO_PUBLISH_CURRENT_MEASURE, charBufferMAC);
     strcat(TOPICO_PUBLISH_CURRENT_MEASURE, TOPICO_CURRENT_MEASURE);
 
+
+    Serial.println(String("ID: ") + ID_MQTT);
     Serial.println(TOPICO_SUBSCRIBE_CONTROLE_LUZ);
     Serial.println(TOPICO_SUBSCRIBE_CONTROLE_AR);
     Serial.println(TOPICO_PUBLISH_TEMPERATURA);
@@ -198,7 +202,6 @@ void reconectWiFi()
     Serial.print("Endereço MAC: ");
     Serial.println(WiFi.macAddress());
 
-    Serial.println(ID_MQTT);
 
 }
 
@@ -239,7 +242,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
 {
     String msg;
 
-    if (strcmp(topic,"LAB_ROBOTICA/lightOnOff") == 0)
+    if (strcmp(topic, TOPICO_SUBSCRIBE_CONTROLE_LUZ) == 0)
     {
       Serial.print("Mensagem recebida no tópico: ");
       Serial.println(topic);
@@ -261,7 +264,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length)
       }
     }
 
-    if (strcmp(topic,"LAB_ROBOTICA/airOnOff") == 0)
+    if (strcmp(topic, TOPICO_SUBSCRIBE_CONTROLE_AR) == 0)
     {
       Serial.print("Mensagem recebida no tópico: ");
       Serial.println(topic);
@@ -301,11 +304,10 @@ void EnviaEstadoOutputMQTT(void)
   lightStatus = digitalRead(PINO_DETECTA_LUZ);
   presenceStatus = digitalRead(PINO_PRESENCA);
 
-  sensor.calibrate();
   //float U = 220;
-  double I = sensor.getCurrentAC();
+  double I = sensor.getCurrentAC(60) - 7.3;
 
-    Serial.println(String("I = ") + I + " A");
+  Serial.println(String("I = ") + I + " A");
 
   if (lightStatus == HIGH)
   {

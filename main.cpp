@@ -1,5 +1,6 @@
 #include <DHT.h>
-#include "ACS712.h"
+//#include "ACS712.h"
+#include "EmonLib.h"                        // inclui a biblioteca
 #include <Adafruit_Sensor.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -13,7 +14,14 @@ PubSubClient MQTT(espClient);
 float temperatura, umidade;
 bool releStatus, presenceStatus, lightStatus;
 
-ACS712 sensor(ACS712_30A, SENSOR_CORRENTE);
+EnergyMonitor emon1;                                                            //EmonLib
+
+#define   SAMPLING_TIME     0.0001668649    // intervalo de amostragem 166,86us //EmonLib
+#define   LINE_FREQUENCY    60              // frequencia 60Hz Brasil           //EmonLib
+#define   VOLTAGE_AC        220.00          // 220 Volts                        //EmonLib
+#define   ACS_MPY           15.41           // ganho/calibracao da corrente     //EmonLib
+double Irms = 0;
+//ACS712 sensor(ACS712_30A, SENSOR_CORRENTE);                                   //ACS712 LIB
 
 #define CHAR_BUFFER_SIZE  18
 String sMAC;
@@ -42,7 +50,10 @@ void setup() {
     digitalWrite(PINO_STATUS, LOW);
     configWifi();
     configMQTT();
-    sensor.calibrate();
+
+    emon1.current(SENSOR_CORRENTE, ACS_MPY);                                    //EmonLib
+
+    //sensor.calibrate();                                                       //ACS712 LIB
     Arcondicionado_inicializar();
 
     sMAC = WiFi.macAddress();
@@ -304,10 +315,13 @@ void EnviaEstadoOutputMQTT(void)
   lightStatus = digitalRead(PINO_DETECTA_LUZ);
   presenceStatus = digitalRead(PINO_PRESENCA);
 
-  //float U = 220;
-  float I = sensor.getCurrentAC(60);
+  //float U = 220;                                                              //ACS712 LIB
+  //float I = sensor.getCurrentAC(60);                                          //ACS712 LIB
+  //I = I * 0.707;                                                              //ACS712 LIB
 
-  Serial.println(String("I = ") + I + " A");
+  Irms = emon1.calcIrms(1996);  // Calculate Irms only                          //EmonLib
+  Serial.println(String("I = ") + Irms + " A");                                 //EmonLib
+
 
   if (lightStatus == HIGH)
   {
@@ -339,6 +353,6 @@ void EnviaEstadoOutputMQTT(void)
   }
 
     // Medidor de corrente ACS712
-    MQTT.publish(TOPICO_PUBLISH_CURRENT_MEASURE, String(I).c_str());
+    MQTT.publish(TOPICO_PUBLISH_CURRENT_MEASURE, String(Irms).c_str());
 
 }

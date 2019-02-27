@@ -1,6 +1,6 @@
 #include <DHT.h>
 //#include "ACS712.h"
-#include "EmonLib.h"                        // inclui a biblioteca
+#include "EmonLib.h"
 #include <Adafruit_Sensor.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -15,12 +15,14 @@ float temperatura, umidade;
 bool releStatus, presenceStatus, lightStatus;
 
 EnergyMonitor emon1;                                                            //EmonLib
+#define CURRENT_CAL 1 //VALOR DE CALIBRAÇÃO (DEVE SER AJUSTADO EM PARALELO COM UM MULTÍMETRO MEDINDO A CORRENTE DA CARGA)
 
-#define   SAMPLING_TIME     0.0001668649    // intervalo de amostragem 166,86us //EmonLib
-#define   LINE_FREQUENCY    60              // frequencia 60Hz Brasil           //EmonLib
-#define   VOLTAGE_AC        220.00          // 220 Volts                        //EmonLib
-#define   ACS_MPY           15.41           // ganho/calibracao da corrente     //EmonLib
-double Irms = 0;
+//#define   SAMPLING_TIME     0.0001668649    // intervalo de amostragem 166,86us //EmonLib
+//#define   LINE_FREQUENCY    60              // frequencia 60Hz Brasil           //EmonLib
+//#define   VOLTAGE_AC        220.00          // 220 Volts                        //EmonLib
+//#define   ACS_MPY           15.41           // ganho/calibracao da corrente     //EmonLib
+//double Irms = 0;                                                                //EmonLib
+
 //ACS712 sensor(ACS712_30A, SENSOR_CORRENTE);                                   //ACS712 LIB
 
 #define CHAR_BUFFER_SIZE  18
@@ -51,7 +53,7 @@ void setup() {
     configWifi();
     configMQTT();
 
-    emon1.current(SENSOR_CORRENTE, ACS_MPY);                                    //EmonLib
+    emon1.current(SENSOR_CORRENTE, CURRENT_CAL); //(PINO ANALÓGIO / VALOR DE CALIBRAÇÃO)                 //EmonLib
 
     //sensor.calibrate();                                                       //ACS712 LIB
     Arcondicionado_inicializar();
@@ -315,12 +317,16 @@ void EnviaEstadoOutputMQTT(void)
   lightStatus = digitalRead(PINO_DETECTA_LUZ);
   presenceStatus = digitalRead(PINO_PRESENCA);
 
-  //float U = 220;                                                              //ACS712 LIB
-  //float I = sensor.getCurrentAC(60);                                          //ACS712 LIB
-  //I = I * 0.707;                                                              //ACS712 LIB
+    double current  = emon1.calcIrms(1996); //FUNÇÃO DE CÁLCULO (20 SEMICICLOS / TEMPO LIMITE PARA FAZER A MEDIÇÃO)
+    current = current*19.205 - 0.6637;
+    if(current < 0)
+      {
+        current = 0;
+      }
 
-  Irms = emon1.calcIrms(1996);  // Calculate Irms only                          //EmonLib
-  Serial.println(String("I = ") + Irms + " A");                                 //EmonLib
+    Serial.print("Corrente medida: "); //IMPRIME O TEXTO NA SERIAL
+    Serial.print(current); //IMPRIME NA SERIAL O VALOR DE CORRENTE MEDIDA
+    Serial.println("A"); //IMPRIME O TEXTO NA SERIAL
 
 
   if (lightStatus == HIGH)
@@ -352,7 +358,7 @@ void EnviaEstadoOutputMQTT(void)
     MQTT.publish(TOPICO_PUBLISH_UMIDADE, String(umidade).c_str());
   }
 
-    // Medidor de corrente ACS712
-    MQTT.publish(TOPICO_PUBLISH_CURRENT_MEASURE, String(Irms).c_str());
+    //Medidor de corrente ACS712
+    MQTT.publish(TOPICO_PUBLISH_CURRENT_MEASURE, String(current).c_str());
 
 }

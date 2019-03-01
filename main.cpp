@@ -11,7 +11,7 @@
 
 WiFiClient espClient;
 PubSubClient MQTT(espClient);
-float temperatura, umidade;
+float temperatura, umidade, current;
 bool releStatus, presenceStatus, lightStatus;
 
 EnergyMonitor emon1;                                                            //EmonLib
@@ -317,16 +317,13 @@ void EnviaEstadoOutputMQTT(void)
   lightStatus = digitalRead(PINO_DETECTA_LUZ);
   presenceStatus = digitalRead(PINO_PRESENCA);
 
-    double current  = emon1.calcIrms(1996); //FUNÇÃO DE CÁLCULO (20 SEMICICLOS / TEMPO LIMITE PARA FAZER A MEDIÇÃO)
+    current = emon1.calcIrms(1996); //FUNÇÃO DE CÁLCULO (20 SEMICICLOS / TEMPO LIMITE PARA FAZER A MEDIÇÃO)
     current = current*19.205 - 0.6637;
-    if(current < 0)
-      {
-        current = 0;
-      }
+    if(current < 0) current = 0;
 
-    Serial.print("Corrente medida: "); //IMPRIME O TEXTO NA SERIAL
-    Serial.print(current); //IMPRIME NA SERIAL O VALOR DE CORRENTE MEDIDA
-    Serial.println("A"); //IMPRIME O TEXTO NA SERIAL
+    //Serial.print("Corrente medida: "); //IMPRIME O TEXTO NA SERIAL
+    //Serial.print(current); //IMPRIME NA SERIAL O VALOR DE CORRENTE MEDIDA
+    //Serial.println("A"); //IMPRIME O TEXTO NA SERIAL
 
 
   if (lightStatus == HIGH)

@@ -2,11 +2,13 @@
 #define CONECT_H
 
 //Config Wi-Fi
-const char* SSID = "Robotica_IFCZ";
-const char* PASS = "852456rb";
+const char* SSID = "Biometria";
+const char* PASS = "bio@ifpb";
+//const char* SSID = "Robotica_IFCZ";
+//const char* PASS = "852456rb";
 
 //Config MQTT
-const char* BROKER_MQTT = "10.3.141.125";   //ip/host do broker
+const char* BROKER_MQTT = "10.3.204.50";   //ip/host do broker
 int BROKER_PORT = 1883;                           //porta do broker
 char ID_MQTT[20];
 //const char* ID_MQTT = "LAB_ROBOTICA";  //MAC
